@@ -7,12 +7,14 @@ import (
 	"log"
 	"net"
 
+	. "CS598FTS-Warmup/common"
 	pb "CS598FTS-Warmup/mwmr"
 	"google.golang.org/grpc"
 )
 
 var (
-	port = flag.Int("port", 50051, "The server port")
+	port    = flag.Int("port", 50051, "The server port")
+	kvStore = make(map[string]Pair)
 )
 
 // server is used to implement mwmr.MWMRServer.
@@ -23,21 +25,21 @@ type server struct {
 // GetPhase implements mwmr.MWMRServer.
 func (s *server) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply, error) {
 	// TODO: Server GetPhase implementation
-	log.Printf("Receive GetRequest: %s | %s | %d %d \n", in.GetKey(), in.GetValue(), in.GetTs().Ts, in.GetTs().ClientID)
+	key := in.GetKey()
+	log.Printf("Receive GetRequest: key: %s\n", key)
 	return &pb.GetReply{
-		Key:   in.GetKey(),
-		Value: in.GetValue(),
-		Ts:    in.GetTs(),
+		Value: kvStore[key].Value,
+		Time:  kvStore[key].Ts.Time,
+		Cid:   kvStore[key].Ts.Cid,
 	}, nil
 }
 
 // SetPhase implements mwmr.MWMRServer.
 func (s *server) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, error) {
 	// TODO: Server SetPhase implementation
-	log.Printf("Receive SetRequest: %s | %s | %d %d \n", in.GetKey(), in.GetValue(), in.GetTs().Ts, in.GetTs().ClientID)
+	log.Printf("Receive SetRequest: %s | %s | %d %d \n", in.GetKey(), in.GetValue(), in.GetTime(), in.GetCid())
 	return &pb.SetACK{
-		Key: in.GetKey(),
-		Ts:  in.GetTs(),
+		Applied: true,
 	}, nil
 }
 

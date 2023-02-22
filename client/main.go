@@ -12,13 +12,14 @@ import (
 )
 
 var (
-	addr = flag.String("addr", "localhost:50051", "the address to connect to")
+	replicas = []string{"localhost:50051", "localhost:50052", "localhost:50053"}
+	cid      = flag.Int64("id", 0, "the address to connect to")
 )
 
 func main() {
 	flag.Parse()
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(replicas[0], grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -29,29 +30,26 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+	// GetPhase example
 	getReply, err := c.GetPhase(ctx, &pb.GetRequest{
-		Key:   "aaa",
-		Value: "bbb",
-		Ts: &pb.Timestamp{
-			Ts:       0,
-			ClientID: 1,
-		},
+		Key: "aaa",
 	})
 	if err != nil {
 		log.Fatalf("could not getphase: %v", err)
 	}
-	log.Printf("GetReply: %s | %s | %d %d \n", getReply.GetKey(), getReply.GetValue(), getReply.GetTs().Ts, getReply.GetTs().ClientID)
+	log.Printf("GetReply: value: %s, timestamp: %d %d\n", getReply.GetValue(), getReply.GetTime(), getReply.GetCid())
+	// ---------------------------------------------------------------
 
+	// SetPhase example
 	setReply, err := c.SetPhase(ctx, &pb.SetRequest{
 		Key:   "aaa",
 		Value: "bbb",
-		Ts: &pb.Timestamp{
-			Ts:       0,
-			ClientID: 1,
-		},
+		Time:  0,
+		Cid:   0,
 	})
 	if err != nil {
 		log.Fatalf("could not getphase: %v", err)
 	}
-	log.Printf("SetACK: %s | %d %d \n", setReply.GetKey(), setReply.GetTs().Ts, setReply.GetTs().ClientID)
+	log.Printf("SetACK: applied: %t\n", setReply.GetApplied())
+	// ---------------------------------------------------------------
 }
