@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option go_package = "CS598FTS-Warmup/mwmr";
+//option java_multiple_files = true;
+//option java_package = "io.grpc.examples.helloworld";
+//option java_outer_classname = "HelloWorldProto";
+
+package mwmr;
+
+service MWMR {
+  rpc GetPhase (GetRequest) returns (GetReply) {}
+  rpc SetPhase (SetRequest) returns (SetACK) {}
+}
+
+message Timestamp {
+  int32 ts = 1;
+  int32 clientID = 2;
+}
+
+message GetRequest {
+  string key = 1;
+  string value = 2;
+  Timestamp ts = 3;
+}
+
+message GetReply {
+  string key = 1;
+  string value = 2;
+  Timestamp ts = 3;
+}
+
+message SetRequest {
+  string key = 1;
+  string value = 2;
+  Timestamp ts = 3;
+}
+
+message SetACK {
+  string key = 1;
+  Timestamp ts = 2;
+}
