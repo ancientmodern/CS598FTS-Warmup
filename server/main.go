@@ -6,20 +6,24 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 
 	. "CS598FTS-Warmup/common"
 	pb "CS598FTS-Warmup/mwmr"
+
 	"google.golang.org/grpc"
 )
 
 var (
-	port    = flag.Int("port", 50051, "The server port")
-	kvStore = make(map[string]Pair)
+	port       = flag.Int("port", 50051, "The server port")
+	kvStore    = make(map[string]Pair)
+	NUM_RECORD = 10
 )
 
 // server is used to implement mwmr.MWMRServer.
 type server struct {
 	pb.UnimplementedMWMRServer
+	m map[string]Pair
 }
 
 // GetPhase implements mwmr.MWMRServer.
@@ -38,6 +42,24 @@ func (s *server) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply,
 func (s *server) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, error) {
 	// TODO: Server SetPhase implementation
 	log.Printf("Receive SetRequest: %s | %s | %d %d \n", in.GetKey(), in.GetValue(), in.GetTime(), in.GetCid())
+
+	key := in.GetKey()
+	val := in.GetValue()
+	time := in.GetTime()
+	cid := in.GetCid()
+
+	if time < kvStore[key].Ts.Time || (time == kvStore[key].Ts.Time && cid < kvStore[key].Ts.Cid) {
+		return &pb.SetACK{
+			Applied: false,
+		}, nil
+	}
+
+	kvStore[key] = Pair{Value: val, Ts: Timestamp{Time: time, Cid: cid}}
+
+	for i := 0; i < NUM_RECORD; i++ {
+		log.Printf("entry %d, value %s time %d, cid %d", i, kvStore[strconv.Itoa(i)].Value, kvStore[strconv.Itoa(i)].Ts.Time, kvStore[strconv.Itoa(i)].Ts.Cid)
+	}
+
 	return &pb.SetACK{
 		Applied: true,
 	}, nil
