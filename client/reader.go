@@ -129,8 +129,10 @@ func readerSetPhase(key string, pair Pair) {
 
 func read(key string) string {
 	readPair := readerGetPhase(key)
+	total_gets += 1
 	log.Printf("Reader getPhase done, pair: {value: %s, time: %d, cid: %d}\n", readPair.Value, readPair.Ts.Time, readPair.Ts.Cid)
 	readerSetPhase(key, readPair)
+	total_sets += 1
 	log.Printf("Reader setPhase done, value: %s\n", readPair.Value)
 	log.Println("====================================================================================================")
 	return readPair.Value
