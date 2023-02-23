@@ -1,23 +1,22 @@
 package main
 
 import (
+	pb "CS598FTS-Warmup/mwmr"
 	"context"
 	"flag"
-	"log"
-	"time"
-
-	pb "CS598FTS-Warmup/mwmr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"log"
+	"time"
 )
 
 var (
 	replicas = []string{"localhost:50051", "localhost:50052", "localhost:50053"}
-	cid      = flag.Int64("id", 0, "the address to connect to")
+	cid      = flag.Int64("id", 0, "the id of this client")
+	f        = 1
 )
 
-func main() {
-	flag.Parse()
+func reference() {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(replicas[0], grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -52,4 +51,11 @@ func main() {
 	}
 	log.Printf("SetACK: applied: %t\n", setReply.GetApplied())
 	// ---------------------------------------------------------------
+}
+
+func main() {
+	flag.Parse()
+	read("111")
+	write("111", "333")
+	read("111")
 }

@@ -25,7 +25,6 @@ func getNewTimestamp(arr []Timestamp) Timestamp {
 }
 
 func writerGetPhase(key string) Timestamp {
-	f := 2
 	n := 2*f + 1
 
 	var wg sync.WaitGroup
@@ -50,7 +49,7 @@ func writerGetPhase(key string) Timestamp {
 				Key: key,
 			})
 			if err != nil {
-				log.Printf("Writer %d getphase from replica %d failed: %v", cid, rid, err)
+				log.Printf("Writer %d getphase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				temp := Timestamp{
 					Time: getReply.GetTime(),
@@ -58,6 +57,7 @@ func writerGetPhase(key string) Timestamp {
 				}
 				ch <- temp
 			}
+			wg.Done()
 		}(i)
 	}
 
@@ -66,19 +66,71 @@ func writerGetPhase(key string) Timestamp {
 		select {
 		case ts := <-ch:
 			done = append(done, ts)
-			wg.Done()
 		default:
 
 		}
 	}
 
+	close(ch)
 	wg.Wait()
 
 	return getNewTimestamp(done)
 }
 
-func write(key, value string) bool {
+func writerSetPhase(key, value string, ts Timestamp) {
+	n := 2*f + 1
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+
+	ch := make(chan bool, n)
+
+	for i := 0; i < n; i++ {
+		go func(rid int) {
+			conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				log.Fatalf("did not connect: %v", err)
+			}
+			defer conn.Close()
+			c := pb.NewMWMRClient(conn)
+
+			// Contact the server and print out its response.
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			setReply, err := c.SetPhase(ctx, &pb.SetRequest{
+				Key:   key,
+				Value: value,
+				Time:  ts.Time,
+				Cid:   ts.Cid,
+			})
+			if err != nil {
+				log.Printf("Writer %d setphase from replica %d failed: %v", *cid, rid, err)
+			} else {
+				ch <- setReply.GetApplied()
+			}
+			wg.Done()
+		}(i)
+	}
+
+	done := 0
+	for done < f+1 {
+		select {
+		case _ = <-ch:
+			done++
+		default:
+
+		}
+	}
+
+	close(ch)
+	wg.Wait()
+}
+
+func write(key, value string) {
 	newTimestamp := writerGetPhase(key)
-	// TODO: writerSetPhase
-	return true
+	log.Printf("Writer getPhase done, new-ts: {time: %d, cid: %d}\n", newTimestamp.Time, newTimestamp.Cid)
+	writerSetPhase(key, value, newTimestamp)
+	log.Println("Writer setPhase done")
+	log.Println("====================================================================================================")
 }
