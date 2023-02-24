@@ -71,8 +71,8 @@ func writerGetPhase(key string) Timestamp {
 		}
 	}
 
-	close(ch)
 	wg.Wait()
+	close(ch)
 
 	return getNewTimestamp(done)
 }
@@ -123,8 +123,8 @@ func writerSetPhase(key, value string, ts Timestamp) {
 		}
 	}
 
-	close(ch)
 	wg.Wait()
+	close(ch)
 }
 
 func write(key, value string) {

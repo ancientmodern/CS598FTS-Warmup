@@ -71,8 +71,8 @@ func readerGetPhase(key string) Pair {
 		}
 	}
 
-	close(ch)
 	wg.Wait()
+	close(ch)
 
 	return getReadPair(done)
 }
@@ -123,8 +123,8 @@ func readerSetPhase(key string, pair Pair) {
 		}
 	}
 
-	close(ch)
 	wg.Wait()
+	close(ch)
 }
 
 func read(key string) string {
