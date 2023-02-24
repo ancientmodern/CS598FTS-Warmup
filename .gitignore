@@ -2,3 +2,4 @@
 .vscode
 output/
 *.sum
+.DS_Store
