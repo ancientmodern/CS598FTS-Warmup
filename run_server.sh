@@ -3,6 +3,16 @@
 port_num=50051
 size=10
 
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -s|--size)
+      size="$2"
+      shift # past argument
+      shift # past value
+      ;;
+  esac
+done
+
 ./output/replica --port=$port_num  --size=$size &
 
 sleep 100
