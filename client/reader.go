@@ -64,6 +64,7 @@ func readerGetPhase(key string) Pair {
 
 	done := make([]Pair, 0, f+1)
 	for len(done) < f+1 {
+		log.Printf("here")
 		select {
 		case pair := <-ch:
 			done = append(done, pair)
