@@ -1,6 +1,6 @@
 #!/bin/bash
 
-port_num=50055=1
+port_num=50051
 size=10
 
 ./output/replica --port=$port_num  --size=$size &
