@@ -4,11 +4,12 @@ import (
 	. "CS598FTS-Warmup/common"
 	pb "CS598FTS-Warmup/mwmr"
 	"context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func getNewTimestamp(arr []Timestamp) Timestamp {
@@ -129,9 +130,6 @@ func writerSetPhase(key, value string, ts Timestamp) {
 
 func write(key, value string) {
 	newTimestamp := writerGetPhase(key)
-	log.Printf("Writer getPhase done, new-ts: {time: %d, cid: %d}\n", newTimestamp.Time, newTimestamp.Cid)
 	writerSetPhase(key, value, newTimestamp)
 	total_sets += 1
-	log.Println("Writer setPhase done")
-	log.Println("====================================================================================================")
 }

@@ -4,11 +4,12 @@ import (
 	. "CS598FTS-Warmup/common"
 	pb "CS598FTS-Warmup/mwmr"
 	"context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func getReadPair(arr []Pair) Pair {
@@ -129,10 +130,7 @@ func readerSetPhase(key string, pair Pair) {
 
 func read(key string) string {
 	readPair := readerGetPhase(key)
-	log.Printf("Reader getPhase done, pair: {value: %s, time: %d, cid: %d}\n", readPair.Value, readPair.Ts.Time, readPair.Ts.Cid)
 	readerSetPhase(key, readPair)
 	total_gets += 1
-	log.Printf("Reader setPhase done, value: %s\n", readPair.Value)
-	log.Println("====================================================================================================")
 	return readPair.Value
 }
