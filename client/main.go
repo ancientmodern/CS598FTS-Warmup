@@ -26,7 +26,7 @@ var (
 	numRead = flag.Int("numRead", defaultNumRead, "Number of Reads")
 	numWrite = flag.Int("numWrite", defaultNumWrite, "Number of Writes")
 	numInitial = flag.Int("numInitial", defaultNumInitial, "Number of Initialized Pairs")
-	f        = 0
+	f        = 2
 	total_sets = 0
 	total_gets = 0
 )

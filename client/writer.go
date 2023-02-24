@@ -131,6 +131,7 @@ func write(key, value string) {
 	newTimestamp := writerGetPhase(key)
 	log.Printf("Writer getPhase done, new-ts: {time: %d, cid: %d}\n", newTimestamp.Time, newTimestamp.Cid)
 	writerSetPhase(key, value, newTimestamp)
+	total_sets += 1
 	log.Println("Writer setPhase done")
 	log.Println("====================================================================================================")
 }
