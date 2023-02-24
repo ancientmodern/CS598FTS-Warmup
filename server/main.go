@@ -6,83 +6,86 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"google.golang.org/grpc"
 	"log"
 	"net"
+	"strconv"
+	"sync"
+
+	"google.golang.org/grpc"
 )
 
 var (
-	port       = flag.Int("port", 50051, "The server port")
-	kvStore    = make(map[string]*Pair)
-	NUM_RECORD = 10
+	PORT       = flag.Int("port", 50051, "The server port")
+	SIZE_STORE = flag.Int("size", 10, "num of entries in the store")
+	kvStore    = make(map[string]*Pair_m)
+	s          *grpc.Server
 )
 
 // server is used to implement mwmr.MWMRServer.
 type server struct {
 	pb.UnimplementedMWMRServer
-	// m map[string]Pair
 }
 
 // GetPhase implements mwmr.MWMRServer.
 func (s *server) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply, error) {
-	// TODO: Server GetPhase implementation
 	key := in.GetKey()
-	log.Printf("Receive GetRequest: key: %s\n", key)
+	kvStore[key].Mtx.RLock()
+	val := kvStore[key].Value
+	t := kvStore[key].Ts.Time
+	cid := kvStore[key].Ts.Cid
+	kvStore[key].Mtx.RUnlock()
 	return &pb.GetReply{
-		Value: kvStore[key].Value,
-		Time:  kvStore[key].Ts.Time,
-		Cid:   kvStore[key].Ts.Cid,
+		Value: val,
+		Time:  t,
+		Cid:   cid,
 	}, nil
 }
 
 // SetPhase implements mwmr.MWMRServer.
 func (s *server) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, error) {
-	// TODO: Server SetPhase implementation
-	log.Printf("Receive SetRequest: %s | %s | %d %d \n", in.GetKey(), in.GetValue(), in.GetTime(), in.GetCid())
-
 	key := in.GetKey()
 	val := in.GetValue()
 	time := in.GetTime()
 	cid := in.GetCid()
 
-	if time < kvStore[key].Ts.Time || (time == kvStore[key].Ts.Time && cid < kvStore[key].Ts.Cid) {
+	kvStore[key].Mtx.RLock()
+	time_store := kvStore[key].Ts.Time
+	cid_store := kvStore[key].Ts.Cid
+	kvStore[key].Mtx.RUnlock()
+
+	if time < time_store || (time == time_store && cid < cid_store) {
 		return &pb.SetACK{
 			Applied: false,
 		}, nil
 	}
 
-	kvStore[key] = &Pair{Value: val, Ts: Timestamp{Time: time, Cid: cid}}
-
-	//for i := 0; i < NUM_RECORD; i++ {
-	//	log.Printf("entry %d, value %s time %d, cid %d", i, kvStore[strconv.Itoa(i)].Value, kvStore[strconv.Itoa(i)].Ts.Time, kvStore[strconv.Itoa(i)].Ts.Cid)
-	//}
+	kvStore[key].Mtx.Lock()
+	kvStore[key].Value = val
+	kvStore[key].Ts.Time = time
+	kvStore[key].Ts.Cid = cid
+	kvStore[key].Mtx.Unlock()
 
 	return &pb.SetACK{
 		Applied: true,
 	}, nil
 }
 
-func testOnly() {
-	kvStore["111"] = &Pair{
-		Value: "222",
-		Ts: Timestamp{
-			Time: 10,
-			Cid:  2,
-		},
-	}
-}
-
 func main() {
 	flag.Parse()
 
-	testOnly()
+	// initialize the kvStore
+	for i := 0; i < *SIZE_STORE; i++ {
+		kvStore[strconv.Itoa(i)] = &Pair_m{Value: "init", Ts: Timestamp{Time: -1, Cid: -1}, Mtx: sync.RWMutex{}}
+	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
+	s = grpc.NewServer()
+	pb.RegisterMWMRServer(s, &server{})
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *PORT))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
-	pb.RegisterMWMRServer(s, &server{})
+
 	log.Printf("server listening at %v", lis.Addr())
 
 	if err := s.Serve(lis); err != nil {
