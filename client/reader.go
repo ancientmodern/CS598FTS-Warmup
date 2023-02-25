@@ -7,9 +7,6 @@ import (
 	"log"
 	"sync"
 	"time"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func getReadPair(arr []Pair) Pair {
@@ -32,18 +29,11 @@ func readerGetPhase(key string) Pair {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				log.Fatalf("did not connect: %v", err)
-			}
-			defer conn.Close()
-			c := pb.NewMWMRClient(conn)
-
 			// Contact the server and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			getReply, err := c.GetPhase(ctx, &pb.GetRequest{
+			getReply, err := grpcClient[rid].GetPhase(ctx, &pb.GetRequest{
 				Key: key,
 			})
 			if err != nil {
@@ -97,18 +87,11 @@ func readerSetPhase(key string, pair Pair) {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				log.Fatalf("did not connect: %v", err)
-			}
-			defer conn.Close()
-			c := pb.NewMWMRClient(conn)
-
 			// Contact the server and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			setReply, err := c.SetPhase(ctx, &pb.SetRequest{
+			setReply, err := grpcClient[rid].SetPhase(ctx, &pb.SetRequest{
 				Key:   key,
 				Value: pair.Value,
 				Time:  pair.Ts.Time,
@@ -154,6 +137,6 @@ func readerSetPhase(key string, pair Pair) {
 func read(key string) string {
 	readPair := readerGetPhase(key)
 	readerSetPhase(key, readPair)
-	total_gets += 1
+	totalGets += 1
 	return readPair.Value
 }

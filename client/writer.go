@@ -7,9 +7,6 @@ import (
 	"log"
 	"sync"
 	"time"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func getNewTimestamp(arr []Timestamp) Timestamp {
@@ -35,18 +32,11 @@ func writerGetPhase(key string) Timestamp {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				log.Fatalf("did not connect: %v", err)
-			}
-			defer conn.Close()
-			c := pb.NewMWMRClient(conn)
-
 			// Contact the server and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			getReply, err := c.GetPhase(ctx, &pb.GetRequest{
+			getReply, err := grpcClient[rid].GetPhase(ctx, &pb.GetRequest{
 				Key: key,
 			})
 			if err != nil {
@@ -100,18 +90,11 @@ func writerSetPhase(key, value string, ts Timestamp) {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				log.Fatalf("did not connect: %v", err)
-			}
-			defer conn.Close()
-			c := pb.NewMWMRClient(conn)
-
 			// Contact the server and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			setReply, err := c.SetPhase(ctx, &pb.SetRequest{
+			setReply, err := grpcClient[rid].SetPhase(ctx, &pb.SetRequest{
 				Key:   key,
 				Value: value,
 				Time:  ts.Time,
@@ -157,5 +140,5 @@ func writerSetPhase(key, value string, ts Timestamp) {
 func write(key, value string) {
 	newTimestamp := writerGetPhase(key)
 	writerSetPhase(key, value, newTimestamp)
-	total_sets += 1
+	totalSets += 1
 }

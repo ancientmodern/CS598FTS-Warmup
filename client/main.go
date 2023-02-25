@@ -1,7 +1,10 @@
 package main
 
 import (
+	pb "CS598FTS-Warmup/mwmr"
 	"flag"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"math/rand"
 	"strconv"
@@ -17,20 +20,22 @@ const (
 
 var (
 	replicas = []string{"128.110.217.160:50051", "128.110.217.137:50051", "128.110.217.131:50051", "128.110.217.155:50051", "128.110.217.120:50051"}
-	// replicas   = []string{"localhost:50051", "localhost:50052", "localhost:50053", "localhost:50054", "localhost:50055"}
+
 	cid        = flag.Int64("cid", defaultCid, "the id of this client")
 	numRead    = flag.Int("numRead", defaultNumRead, "Number of Reads")
 	numWrite   = flag.Int("numWrite", defaultNumWrite, "Number of Writes")
 	numInitial = flag.Int("numInitial", defaultNumInitial, "Number of Initialized Pairs")
 	f          = 2
-	total_sets = 0
-	total_gets = 0
+	n          = 2*f + 1
+	grpcClient = make([]pb.MWMRClient, n)
+	totalSets  = 0
+	totalGets  = 0
 )
 
 func main() {
 	flag.Parse()
 	rand.Seed(*cid)
-	start_time := time.Now()
+	startTime := time.Now()
 	for i := 0; i < *numRead; i++ {
 		read(strconv.Itoa(rand.Intn(*numInitial)))
 	}
@@ -38,12 +43,21 @@ func main() {
 		write(strconv.Itoa(rand.Intn(*numInitial)), strconv.Itoa(rand.Intn(*numInitial)))
 	}
 
-	end_time := time.Now()
-	used_time := end_time.Sub(start_time)
+	for rid := 0; rid < n; rid++ {
+		conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer conn.Close()
+		grpcClient[rid] = pb.NewMWMRClient(conn)
+	}
+
+	endTime := time.Now()
+	usedTime := endTime.Sub(startTime)
 	log.Println("====================================================================================================")
-	log.Println("Number", *cid, "client start time:", start_time)
-	log.Println("Number", *cid, "client end time:", end_time)
-	log.Println("Number", *cid, "client used time:", used_time)
-	log.Printf("Number %d #total_sets done: %d\n", *cid, total_sets)
-	log.Printf("Number %d #total_gets done: %d\n", *cid, total_gets)
+	log.Println("Number", *cid, "client start time:", startTime)
+	log.Println("Number", *cid, "client end time:", endTime)
+	log.Println("Number", *cid, "client used time:", usedTime)
+	log.Printf("Number %d #total_sets done: %d\n", *cid, totalSets)
+	log.Printf("Number %d #total_gets done: %d\n", *cid, totalGets)
 }
