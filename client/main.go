@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	replicas = []string{"172.16.50.1:50051", "172.16.50.2:50051", "172.16.50.3:50051", "172.16.50.4:50051", "172.16.50.5:50051"}
+	replicas = []string{"128.110.217.160:50051", "128.110.217.137:50051", "128.110.217.131:50051", "128.110.217.155:50051", "128.110.217.120:50051"}
 	// replicas   = []string{"localhost:50051", "localhost:50052", "localhost:50053", "localhost:50054", "localhost:50055"}
 	cid        = flag.Int64("cid", defaultCid, "the id of this client")
 	numRead    = flag.Int("numRead", defaultNumRead, "Number of Reads")
