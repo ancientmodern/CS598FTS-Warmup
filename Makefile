@@ -9,8 +9,8 @@ REPLICA_DIR=./server
 PROTO_FILE=mwmr/mwmr.proto
 
 build:
-	go build -race -o $(CLIENT_BINARY) $(CLIENT_DIR)
-	go build -race -o $(REPLICA_BINARY) $(REPLICA_DIR)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(CLIENT_BINARY) $(CLIENT_DIR)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(REPLICA_BINARY) $(REPLICA_DIR)
 
 clean:
 	go clean

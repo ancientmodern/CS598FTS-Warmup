@@ -15,10 +15,15 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    -i|--ip)
+      ip="$2"
+      shift # past argument
+      shift # past value
+      ;;
   esac
 done
 
-./output/replica --port=$port_num  --size=$size &
+./output/replica --port=$port_num  --size=$size --ip=$ip &
 
 # sleep 100
 # while [[ $(ps aux | grep ./output/client | grep -v grep) ]]

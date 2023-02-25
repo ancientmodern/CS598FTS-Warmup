@@ -3,12 +3,13 @@ package main
 import (
 	pb "CS598FTS-Warmup/mwmr"
 	"flag"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -35,14 +36,6 @@ var (
 func main() {
 	flag.Parse()
 	rand.Seed(*cid)
-	startTime := time.Now()
-	for i := 0; i < *numRead; i++ {
-		read(strconv.Itoa(rand.Intn(*numInitial)))
-	}
-	for i := 0; i < *numWrite; i++ {
-		write(strconv.Itoa(rand.Intn(*numInitial)), strconv.Itoa(rand.Intn(*numInitial)))
-	}
-
 	for rid := 0; rid < n; rid++ {
 		conn, err := grpc.Dial(replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
@@ -50,6 +43,13 @@ func main() {
 		}
 		defer conn.Close()
 		grpcClient[rid] = pb.NewMWMRClient(conn)
+	}
+	startTime := time.Now()
+	for i := 0; i < *numRead; i++ {
+		read(strconv.Itoa(rand.Intn(*numInitial)))
+	}
+	for i := 0; i < *numWrite; i++ {
+		write(strconv.Itoa(rand.Intn(*numInitial)), strconv.Itoa(rand.Intn(*numInitial)))
 	}
 
 	endTime := time.Now()

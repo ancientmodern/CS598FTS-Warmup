@@ -3,6 +3,7 @@
 read=10
 write=10
 initial=10
+num=1
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -21,6 +22,11 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    # -n|--num)
+    #   num="$2"
+    #   shift # past argument
+    #   shift # past value
+    #   ;;
   esac
 done
 

@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	IP         = flag.String("ip", "0.0.0.0", "the server ip address")
 	PORT       = flag.Int("port", 50051, "The server port")
 	SIZE_STORE = flag.Int("size", 10, "num of entries in the store")
 	kvStore    = make(map[string]*Pair_m)
@@ -81,7 +82,7 @@ func main() {
 	s = grpc.NewServer()
 	pb.RegisterMWMRServer(s, &server{})
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *PORT))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *PORT))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
