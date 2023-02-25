@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-./output/replica --port=$port_num  --size=$size --ip=$ip &
+./output/replica --port=$port_num --size=$size --ip=$ip &
 
 # sleep 100
 # while [[ $(ps aux | grep ./output/client | grep -v grep) ]]

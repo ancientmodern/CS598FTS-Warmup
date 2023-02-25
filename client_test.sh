@@ -22,15 +22,15 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    # -n|--num)
-    #   num="$2"
-    #   shift # past argument
-    #   shift # past value
-    #   ;;
+    -n|--num)
+      num="$2"
+      shift # past argument
+      shift # past value
+      ;;
   esac
 done
 
-for i in {1..10}
+for (( i = 1; i <= $num; i++ ))
 do
     ./output/client --numRead=$read --numWrite=$write --numInitial=$initial --cid=$i &
 done
