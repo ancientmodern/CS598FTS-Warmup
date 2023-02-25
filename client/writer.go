@@ -62,18 +62,30 @@ func writerGetPhase(key string) Timestamp {
 		}(i)
 	}
 
-	done := make([]Timestamp, 0, f+1)
-	for len(done) < f+1 {
-		select {
-		case ts := <-ch:
-			done = append(done, ts)
-		default:
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
 
+	done := make([]Timestamp, 0, f+1)
+	// for len(done) < f+1 {
+	// 	select {
+	// 	case ts := <-ch:
+	// 		done = append(done, ts)
+	// 	default:
+
+	// 	}
+	// }
+
+	for pair := range ch {
+		done = append(done, pair)
+		if len(done) >= f+1 {
+			break
 		}
 	}
 
-	wg.Wait()
-	close(ch)
+	// wg.Wait()
+	// close(ch)
 
 	return getNewTimestamp(done)
 }
@@ -114,18 +126,32 @@ func writerSetPhase(key, value string, ts Timestamp) {
 		}(i)
 	}
 
-	done := 0
-	for done < f+1 {
-		select {
-		case _ = <-ch:
-			done++
-		default:
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
 
+	done := 0
+	// for done < f+1 {
+	// 	select {
+	// 	case _ = <-ch:
+	// 		done++
+	// 	default:
+
+	// 	}
+	// }
+
+	for p := range ch {
+		if p && !p {
+		}
+		done++
+		if done >= f+1 {
+			break
 		}
 	}
 
-	wg.Wait()
-	close(ch)
+	// wg.Wait()
+	// close(ch)
 }
 
 func write(key, value string) {

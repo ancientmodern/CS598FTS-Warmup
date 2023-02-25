@@ -10,6 +10,11 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    -p|--port)
+      port_num="$2"
+      shift # past argument
+      shift # past value
+      ;;
   esac
 done
 

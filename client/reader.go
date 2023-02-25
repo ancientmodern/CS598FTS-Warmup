@@ -62,19 +62,27 @@ func readerGetPhase(key string) Pair {
 		}(i)
 	}
 
-	done := make([]Pair, 0, f+1)
-	for len(done) < f+1 {
-		log.Printf("here")
-		select {
-		case pair := <-ch:
-			done = append(done, pair)
-		default:
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
 
+	done := make([]Pair, 0, f+1)
+	// for len(done) < f+1 {
+	// 	log.Printf("here")
+	// 	select {
+	// 	case pair := <-ch:
+	// 		done = append(done, pair)
+	// 	default:
+	// 	}
+	// }
+
+	for pair := range ch {
+		done = append(done, pair)
+		if len(done) >= f+1 {
+			break
 		}
 	}
-
-	wg.Wait()
-	close(ch)
 
 	return getReadPair(done)
 }
@@ -115,18 +123,32 @@ func readerSetPhase(key string, pair Pair) {
 		}(i)
 	}
 
-	done := 0
-	for done < f+1 {
-		select {
-		case _ = <-ch:
-			done++
-		default:
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
 
+	done := 0
+	// for done < f+1 {
+	// 	select {
+	// 	case _ = <-ch:
+	// 		done++
+	// 	default:
+
+	// 	}
+	// }
+
+	for p := range ch {
+		if p && !p {
+		}
+		done++
+		if done >= f+1 {
+			break
 		}
 	}
 
-	wg.Wait()
-	close(ch)
+	// wg.Wait()
+	// close(ch)
 }
 
 func read(key string) string {
