@@ -1,0 +1,25 @@
+INFO: 2023/02/25 18:04:26 main.go:89: ====================================================================================================
+INFO: 2023/02/25 18:04:26 main.go:90: Number 1 #total_sets done: 0
+INFO: 2023/02/25 18:04:26 main.go:91: Number 1 #total_gets done: 1000
+INFO: 2023/02/25 18:04:26 main.go:114: ====================================================
+INFO: 2023/02/25 18:04:26 main.go:116: Mean latency of read: 333614.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:117: Mean latency of read get: 168596.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:118: Mean latency of read set: 165018.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:120: Mean latency of write: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:121: Mean latency of write get: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:122: Mean latency of write get: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:137: ====================================================
+INFO: 2023/02/25 18:04:26 main.go:138: Percentile 50.000000 latency of read: 310000.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:139: Percentile 50.000000 latency of read get: 153000.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:140: Percentile 50.000000 latency of read set: 151000.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:142: Percentile 50.000000 latency of write: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:143: Percentile 50.000000 latency of write get: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:144: Percentile 50.000000 latency of write get: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:137: ====================================================
+INFO: 2023/02/25 18:04:26 main.go:138: Percentile 99.000000 latency of read: 735000.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:139: Percentile 99.000000 latency of read get: 336000.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:140: Percentile 99.000000 latency of read set: 374000.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:142: Percentile 99.000000 latency of write: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:143: Percentile 99.000000 latency of write get: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:144: Percentile 99.000000 latency of write get: 0.000000 ns
+INFO: 2023/02/25 18:04:26 main.go:95: start time: 1677369866266183000, end time: 1677369866600485000 

@@ -4,7 +4,6 @@ import (
 	. "CS598FTS-Warmup/common"
 	pb "CS598FTS-Warmup/mwmr"
 	"context"
-	"log"
 	"sync"
 	"time"
 )
@@ -37,7 +36,7 @@ func readerGetPhase(key string) Pair {
 				Key: key,
 			})
 			if err != nil {
-				log.Printf("Reader %d getphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Reader %d getphase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				temp := Pair{
 					Value: getReply.GetValue(),
@@ -58,14 +57,6 @@ func readerGetPhase(key string) Pair {
 	}()
 
 	done := make([]Pair, 0, f+1)
-	// for len(done) < f+1 {
-	// 	log.Printf("here")
-	// 	select {
-	// 	case pair := <-ch:
-	// 		done = append(done, pair)
-	// 	default:
-	// 	}
-	// }
 
 	for pair := range ch {
 		done = append(done, pair)
@@ -98,7 +89,7 @@ func readerSetPhase(key string, pair Pair) {
 				Cid:   pair.Ts.Cid,
 			})
 			if err != nil {
-				log.Printf("Reader %d setphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Reader %d setphase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				ch <- setReply.GetApplied()
 			}
@@ -112,14 +103,6 @@ func readerSetPhase(key string, pair Pair) {
 	}()
 
 	done := 0
-	// for done < f+1 {
-	// 	select {
-	// 	case _ = <-ch:
-	// 		done++
-	// 	default:
-
-	// 	}
-	// }
 
 	for p := range ch {
 		if p && !p {
@@ -129,14 +112,14 @@ func readerSetPhase(key string, pair Pair) {
 			break
 		}
 	}
-
-	// wg.Wait()
-	// close(ch)
 }
 
-func read(key string) string {
+func read(key string) (string, int64, int64) {
+	t1 := time.Now().UnixNano()
 	readPair := readerGetPhase(key)
+	t2 := time.Now().UnixNano()
 	readerSetPhase(key, readPair)
+	t3 := time.Now().UnixNano()
 	totalGets += 1
-	return readPair.Value
+	return readPair.Value, t2 - t1, t3 - t2
 }

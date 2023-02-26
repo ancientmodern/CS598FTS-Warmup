@@ -4,7 +4,6 @@ import (
 	. "CS598FTS-Warmup/common"
 	pb "CS598FTS-Warmup/mwmr"
 	"context"
-	"log"
 	"sync"
 	"time"
 )
@@ -40,7 +39,7 @@ func writerGetPhase(key string) Timestamp {
 				Key: key,
 			})
 			if err != nil {
-				log.Printf("Writer %d getphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Writer %d getphase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				temp := Timestamp{
 					Time: getReply.GetTime(),
@@ -58,14 +57,6 @@ func writerGetPhase(key string) Timestamp {
 	}()
 
 	done := make([]Timestamp, 0, f+1)
-	// for len(done) < f+1 {
-	// 	select {
-	// 	case ts := <-ch:
-	// 		done = append(done, ts)
-	// 	default:
-
-	// 	}
-	// }
 
 	for pair := range ch {
 		done = append(done, pair)
@@ -73,9 +64,6 @@ func writerGetPhase(key string) Timestamp {
 			break
 		}
 	}
-
-	// wg.Wait()
-	// close(ch)
 
 	return getNewTimestamp(done)
 }
@@ -101,7 +89,7 @@ func writerSetPhase(key, value string, ts Timestamp) {
 				Cid:   ts.Cid,
 			})
 			if err != nil {
-				log.Printf("Writer %d setphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Writer %d setphase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				ch <- setReply.GetApplied()
 			}
@@ -115,14 +103,6 @@ func writerSetPhase(key, value string, ts Timestamp) {
 	}()
 
 	done := 0
-	// for done < f+1 {
-	// 	select {
-	// 	case _ = <-ch:
-	// 		done++
-	// 	default:
-
-	// 	}
-	// }
 
 	for p := range ch {
 		if p && !p {
@@ -132,13 +112,14 @@ func writerSetPhase(key, value string, ts Timestamp) {
 			break
 		}
 	}
-
-	// wg.Wait()
-	// close(ch)
 }
 
-func write(key, value string) {
+func write(key, value string) (int64, int64) {
+	t1 := time.Now().UnixNano()
 	newTimestamp := writerGetPhase(key)
+	t2 := time.Now().UnixNano()
 	writerSetPhase(key, value, newTimestamp)
+	t3 := time.Now().UnixNano()
 	totalSets += 1
+	return t2 - t1, t3 - t2
 }
