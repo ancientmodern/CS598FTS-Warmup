@@ -38,12 +38,12 @@ var (
 	InfoLogger    *log.Logger
 	WarningLogger *log.Logger
 	ErrorLogger   *log.Logger
-	read_ts       = []float64{}
-	read_get_ts   = []float64{}
-	read_set_ts   = []float64{}
-	write_ts      = []float64{}
-	write_get_ts  = []float64{}
-	write_set_ts  = []float64{}
+	read_ts       []float64
+	read_get_ts   []float64
+	read_set_ts   []float64
+	write_ts      []float64
+	write_get_ts  []float64
+	write_set_ts  []float64
 )
 
 func main() {
@@ -126,7 +126,7 @@ func calcPercentile(lst []float64, percentile float64) float64 {
 	if len(lst) == 0 {
 		return 0
 	}
-	res, err := stats.Percentile([]float64(lst), percentile)
+	res, err := stats.Percentile(lst, percentile)
 	if err != nil {
 		ErrorLogger.Fatal(err)
 	}
@@ -142,5 +142,4 @@ func logPercentile(percentile float64) {
 	InfoLogger.Printf("Percentile %f latency of write: %f ns\n", percentile, calcPercentile(write_ts, percentile))
 	InfoLogger.Printf("Percentile %f latency of write get: %f ns\n", percentile, calcPercentile(write_get_ts, percentile))
 	InfoLogger.Printf("Percentile %f latency of write get: %f ns\n", percentile, calcPercentile(write_set_ts, percentile))
-
 }
