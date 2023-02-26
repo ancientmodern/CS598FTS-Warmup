@@ -23,14 +23,14 @@ const (
 )
 
 var (
-	// replicas = []string{"128.110.217.160:50051", "128.110.217.137:50051", "128.110.217.131:50051", "128.110.217.155:50051", "128.110.217.120:50051"}
+	replicas = []string{"128.110.217.160:50051", "128.110.217.137:50051", "128.110.217.131:50051", "128.110.217.155:50051", "128.110.217.120:50051"}
 
-	replicas      = []string{"localhost:50051"}
+	// replicas      = []string{"localhost:50051"}
 	cid           = flag.Int64("cid", defaultCid, "the id of this client")
 	numRead       = flag.Int("numRead", defaultNumRead, "Number of Reads")
 	numWrite      = flag.Int("numWrite", defaultNumWrite, "Number of Writes")
 	numInitial    = flag.Int("numInitial", defaultNumInitial, "Number of Initialized Pairs")
-	f             = 0
+	f             = 2
 	n             = 2*f + 1
 	grpcClient    = make([]pb.MWMRClient, n)
 	totalSets     = 0
@@ -51,7 +51,7 @@ func main() {
 	flag.Parse()
 	rand.Seed(*cid)
 
-	file, err := os.OpenFile(fmt.Sprintf("logs_client%d.txt", *cid), os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(fmt.Sprintf("logs/logs_client%d.txt", *cid), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
