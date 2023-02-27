@@ -114,12 +114,12 @@ func readerSetPhase(key string, pair Pair) {
 	}
 }
 
-func read(key string) (string, int64, int64) {
+func read(key string) (Pair, int64, int64) {
 	t1 := time.Now().UnixNano()
 	readPair := readerGetPhase(key)
 	t2 := time.Now().UnixNano()
 	readerSetPhase(key, readPair)
 	t3 := time.Now().UnixNano()
 	totalGets += 1
-	return readPair.Value, t2 - t1, t3 - t2
+	return readPair, t2 - t1, t3 - t2
 }

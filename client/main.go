@@ -19,7 +19,9 @@ const (
 	defaultNumRead    = 10
 	defaultNumWrite   = 10
 	defaultNumInitial = 10
+	defaultNumClients = 1
 	defaultCid        = 0
+	defaultForCorrect = false
 )
 
 var (
@@ -30,6 +32,8 @@ var (
 	numRead       = flag.Int("numRead", defaultNumRead, "Number of Reads")
 	numWrite      = flag.Int("numWrite", defaultNumWrite, "Number of Writes")
 	numInitial    = flag.Int("numInitial", defaultNumInitial, "Number of Initialized Pairs")
+	numClients    = flag.Int("numClients", defaultNumClients, "Number of concurrent clients")
+	isForCorrect  = flag.Bool("isForCorrect", defaultForCorrect, "Test for correctness or not")
 	f             = 2
 	n             = 2*f + 1
 	grpcClient    = make([]pb.MWMRClient, n)
@@ -51,7 +55,19 @@ func main() {
 	flag.Parse()
 	rand.Seed(*cid)
 
-	file, err := os.OpenFile(fmt.Sprintf("logs/logs_client%d.txt", *cid), os.O_RDWR|os.O_CREATE, 0666)
+	var logsDir string
+	if *isForCorrect {
+		logsDir = "logs_for_correctness/logs_with_%d_clients/"
+	} else {
+		logsDir = "logs/logs_with_%d_clients/"
+	}
+
+	err := os.MkdirAll(fmt.Sprintf(logsDir, *numClients), 0750)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+
+	file, err := os.OpenFile(fmt.Sprintf(logsDir+"logs_client%d_r%d_w%d.txt", *numClients, *cid, *numRead, *numWrite), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,33 +85,82 @@ func main() {
 	}
 
 	start := time.Now().UnixNano()
-	for i := 0; i < *numRead; i++ {
-		_, read_get_t, read_set_t := read(strconv.Itoa(rand.Intn(*numInitial)))
-		read_get_ts = append(read_get_ts, float64(read_get_t))
-		read_set_ts = append(read_set_ts, float64(read_set_t))
-		read_ts = append(read_ts, float64(read_get_t+read_set_t))
-		// InfoLogger.Printf("ith read: %d, read_get_t: %d ns, read_set_t: %d ns, read_t: %d ns", i, read_get_t, read_set_t, read_get_t+read_set_t)
+	// for i := 0; i < *numRead; i++ {
+	// 	_, read_get_t, read_set_t := read(strconv.Itoa(rand.Intn(*numInitial)))
+	// 	read_get_ts = append(read_get_ts, float64(read_get_t))
+	// 	read_set_ts = append(read_set_ts, float64(read_set_t))
+	// 	read_ts = append(read_ts, float64(read_get_t+read_set_t))
+	// 	// InfoLogger.Printf("ith read: %d, read_get_t: %d ns, read_set_t: %d ns, read_t: %d ns", i, read_get_t, read_set_t, read_get_t+read_set_t)
 
+	// }
+	// for i := 0; i < *numWrite; i++ {
+	// 	write_get_t, write_set_t, _ := write(strconv.Itoa(rand.Intn(*numInitial)), strconv.Itoa(rand.Intn(*numInitial)))
+	// 	write_get_ts = append(write_get_ts, float64(write_get_t))
+	// 	write_set_ts = append(write_set_ts, float64(write_set_t))
+	// 	write_ts = append(write_ts, float64(write_get_t+write_set_t))
+	// 	// InfoLogger.Printf("ith write: %d, write_get_t: %d ns, write_set_t: %d ns, write_t: %d ns", i, write_get_t, write_set_t, write_get_t+write_set_t)
+	// }
+
+	r := 0
+	w := 0
+	for r < *numRead || w < *numWrite {
+		if r < *numRead && w < *numWrite {
+			decider := rand.Intn(2)
+			if decider == 0 {
+				r++
+				execRead(r)
+			} else {
+				w++
+				execWrite(r)
+			}
+		} else if r < *numRead && w >= *numWrite {
+			r++
+			execRead(r)
+		} else if r >= *numRead && w < *numWrite {
+			w++
+			execWrite(r)
+		}
 	}
-	for i := 0; i < *numWrite; i++ {
-		write_get_t, write_set_t := write(strconv.Itoa(rand.Intn(*numInitial)), strconv.Itoa(rand.Intn(*numInitial)))
-		write_get_ts = append(write_get_ts, float64(write_get_t))
-		write_set_ts = append(write_set_ts, float64(write_set_t))
-		write_ts = append(write_ts, float64(write_get_t+write_set_t))
-		// InfoLogger.Printf("ith write: %d, write_get_t: %d ns, write_set_t: %d ns, write_t: %d ns", i, write_get_t, write_set_t, write_get_t+write_set_t)
-	}
+
 	end := time.Now().UnixNano()
 
-	InfoLogger.Println("====================================================================================================")
-	InfoLogger.Printf("Number %d #total_sets done: %d\n", *cid, totalSets)
-	InfoLogger.Printf("Number %d #total_gets done: %d\n", *cid, totalGets)
-	logMean()
-	logPercentile(50)
-	logPercentile(99)
-	InfoLogger.Printf("start time: %d, end time: %d \n", start, end)
+	if !*isForCorrect {
+		InfoLogger.Println("====================================================================================================")
+		InfoLogger.Printf("Number %d #total_sets done: %d\n", *cid, totalSets)
+		InfoLogger.Printf("Number %d #total_gets done: %d\n", *cid, totalGets)
+		logMean()
+		logPercentile(50)
+		logPercentile(99)
+		InfoLogger.Printf("start time: %d, end time: %d \n", start, end)
+	}
 
 	if err := file.Close(); err != nil {
 		ErrorLogger.Fatal(err)
+	}
+}
+
+func execRead(r int) {
+	key := strconv.Itoa(rand.Intn(*numInitial))
+	pair, read_get_t, read_set_t := read(key)
+	if *isForCorrect {
+		InfoLogger.Printf("ithread: %d key: %s timestamp: %d cid: %d value: %s\n", r, key, pair.Ts.Time, pair.Ts.Cid, pair.Value)
+	} else {
+		read_get_ts = append(read_get_ts, float64(read_get_t))
+		read_set_ts = append(read_set_ts, float64(read_set_t))
+		read_ts = append(read_ts, float64(read_get_t+read_set_t))
+	}
+}
+
+func execWrite(w int) {
+	key := strconv.Itoa(rand.Intn(*numInitial))
+	val := strconv.Itoa(rand.Intn(*numInitial))
+	write_get_t, write_set_t, ts := write(key, val)
+	if *isForCorrect {
+		InfoLogger.Printf("ithwrite: %d key: %s timestamp: %d cid: %d value: %s\n", w, key, ts.Time, ts.Cid, val)
+	} else {
+		write_get_ts = append(write_get_ts, float64(write_get_t))
+		write_set_ts = append(write_set_ts, float64(write_set_t))
+		write_ts = append(write_ts, float64(write_get_t+write_set_t))
 	}
 }
 
@@ -141,5 +206,5 @@ func logPercentile(percentile float64) {
 
 	InfoLogger.Printf("Percentile %f latency of write: %f ns\n", percentile, calcPercentile(write_ts, percentile))
 	InfoLogger.Printf("Percentile %f latency of write get: %f ns\n", percentile, calcPercentile(write_get_ts, percentile))
-	InfoLogger.Printf("Percentile %f latency of write get: %f ns\n", percentile, calcPercentile(write_set_ts, percentile))
+	InfoLogger.Printf("Percentile %f latency of write set: %f ns\n", percentile, calcPercentile(write_set_ts, percentile))
 }

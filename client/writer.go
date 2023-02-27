@@ -114,12 +114,12 @@ func writerSetPhase(key, value string, ts Timestamp) {
 	}
 }
 
-func write(key, value string) (int64, int64) {
+func write(key, value string) (int64, int64, Timestamp) {
 	t1 := time.Now().UnixNano()
 	newTimestamp := writerGetPhase(key)
 	t2 := time.Now().UnixNano()
 	writerSetPhase(key, value, newTimestamp)
 	t3 := time.Now().UnixNano()
 	totalSets += 1
-	return t2 - t1, t3 - t2
+	return t2 - t1, t3 - t2, newTimestamp
 }
