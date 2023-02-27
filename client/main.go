@@ -111,14 +111,14 @@ func main() {
 				execRead(r)
 			} else {
 				w++
-				execWrite(r)
+				execWrite(w)
 			}
 		} else if r < *numRead && w >= *numWrite {
 			r++
 			execRead(r)
 		} else if r >= *numRead && w < *numWrite {
 			w++
-			execWrite(r)
+			execWrite(w)
 		}
 	}
 
