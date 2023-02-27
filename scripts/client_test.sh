@@ -4,6 +4,7 @@ read=10
 write=10
 initial=10
 num=1
+correct=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -27,12 +28,17 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    -c|--correct)
+      correct="$2"
+      shift # past argument
+      shift # past value
+      ;;
   esac
 done
 
 for (( i = 1; i <= $num; i++ ))
 do
-    ./output/client --numRead=$read --numWrite=$write --numInitial=$initial --cid=$i &
+    ./output/client --numRead=$read --numWrite=$write --numInitial=$initial --cid=$i --isForCorrect=$correct &
 done
 
 wait
