@@ -30,6 +30,6 @@ for filename in os.listdir(directory):
                 exit(1)
     f.close()
 
-print("Linearizablity Verified!")
+print("Linearizability Verified!")
 
 
