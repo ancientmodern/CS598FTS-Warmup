@@ -52,7 +52,7 @@ func (c *mWMRClient) SetPhase(ctx context.Context, in *SetRequest, opts ...grpc.
 	return out, nil
 }
 
-// MWMRServer is the server API for MWMR service.
+// MWMRServer is the replica API for MWMR service.
 // All implementations must embed UnimplementedMWMRServer
 // for forward compatibility
 type MWMRServer interface {

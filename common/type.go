@@ -14,7 +14,7 @@ type Pair struct {
 	Ts    Timestamp
 }
 
-type Pair_m struct {
+type PairMutex struct {
 	Value string
 	Ts    Timestamp
 	Mtx   sync.RWMutex

@@ -22,8 +22,6 @@ func getNewTimestamp(arr []Timestamp) Timestamp {
 }
 
 func writerGetPhase(key string) Timestamp {
-	n := 2*f + 1
-
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -31,15 +29,15 @@ func writerGetPhase(key string) Timestamp {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			// Contact the server and print out its response.
+			// Contact the replica and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			getReply, err := grpcClient[rid].GetPhase(ctx, &pb.GetRequest{
+			getReply, err := grpcClients[rid].GetPhase(ctx, &pb.GetRequest{
 				Key: key,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Writer %d getphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Writer %d getPhase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				temp := Timestamp{
 					Time: getReply.GetTime(),
@@ -69,8 +67,6 @@ func writerGetPhase(key string) Timestamp {
 }
 
 func writerSetPhase(key, value string, ts Timestamp) {
-	n := 2*f + 1
-
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -78,18 +74,18 @@ func writerSetPhase(key, value string, ts Timestamp) {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			// Contact the server and print out its response.
+			// Contact the replica and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			setReply, err := grpcClient[rid].SetPhase(ctx, &pb.SetRequest{
+			setReply, err := grpcClients[rid].SetPhase(ctx, &pb.SetRequest{
 				Key:   key,
 				Value: value,
 				Time:  ts.Time,
 				Cid:   ts.Cid,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Writer %d setphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Writer %d setPhase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				ch <- setReply.GetApplied()
 			}
@@ -104,9 +100,7 @@ func writerSetPhase(key, value string, ts Timestamp) {
 
 	done := 0
 
-	for p := range ch {
-		if p && !p {
-		}
+	for range ch {
 		done++
 		if done >= f+1 {
 			break
@@ -114,12 +108,7 @@ func writerSetPhase(key, value string, ts Timestamp) {
 	}
 }
 
-func write(key, value string) (int64, int64, Timestamp) {
-	t1 := time.Now().UnixNano()
+func write(key, value string) {
 	newTimestamp := writerGetPhase(key)
-	t2 := time.Now().UnixNano()
 	writerSetPhase(key, value, newTimestamp)
-	t3 := time.Now().UnixNano()
-	totalSets += 1
-	return t2 - t1, t3 - t2, newTimestamp
 }

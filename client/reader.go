@@ -19,8 +19,6 @@ func getReadPair(arr []Pair) Pair {
 }
 
 func readerGetPhase(key string) Pair {
-	n := 2*f + 1
-
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -28,15 +26,15 @@ func readerGetPhase(key string) Pair {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			// Contact the server and print out its response.
+			// Contact the replica and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			getReply, err := grpcClient[rid].GetPhase(ctx, &pb.GetRequest{
+			getReply, err := grpcClients[rid].GetPhase(ctx, &pb.GetRequest{
 				Key: key,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Reader %d getphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Reader %d getPhase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				temp := Pair{
 					Value: getReply.GetValue(),
@@ -69,8 +67,6 @@ func readerGetPhase(key string) Pair {
 }
 
 func readerSetPhase(key string, pair Pair) {
-	n := 2*f + 1
-
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -78,18 +74,18 @@ func readerSetPhase(key string, pair Pair) {
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			// Contact the server and print out its response.
+			// Contact the replica and print out its response.
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			setReply, err := grpcClient[rid].SetPhase(ctx, &pb.SetRequest{
+			setReply, err := grpcClients[rid].SetPhase(ctx, &pb.SetRequest{
 				Key:   key,
 				Value: pair.Value,
 				Time:  pair.Ts.Time,
 				Cid:   pair.Ts.Cid,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Reader %d setphase from replica %d failed: %v", *cid, rid, err)
+				ErrorLogger.Printf("Reader %d setPhase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				ch <- setReply.GetApplied()
 			}
@@ -104,9 +100,7 @@ func readerSetPhase(key string, pair Pair) {
 
 	done := 0
 
-	for p := range ch {
-		if p && !p {
-		}
+	for range ch {
 		done++
 		if done >= f+1 {
 			break
@@ -114,12 +108,8 @@ func readerSetPhase(key string, pair Pair) {
 	}
 }
 
-func read(key string) (Pair, int64, int64) {
-	t1 := time.Now().UnixNano()
+func read(key string) string {
 	readPair := readerGetPhase(key)
-	t2 := time.Now().UnixNano()
 	readerSetPhase(key, readPair)
-	t3 := time.Now().UnixNano()
-	totalGets += 1
-	return readPair, t2 - t1, t3 - t2
+	return readPair.Value
 }
