@@ -21,7 +21,7 @@ func getNewTimestamp(arr []Timestamp) Timestamp {
 	}
 }
 
-func writerGetPhase(key string) Timestamp {
+func (s *RegServer) writerGetPhase(key uint64) Timestamp {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -33,11 +33,16 @@ func writerGetPhase(key string) Timestamp {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			getReply, err := grpcClients[rid].GetPhase(ctx, &pb.GetRequest{
+			getReply, err := s.grpcClients[rid].GetPhase(ctx, &pb.GetRequest{
 				Key: key,
 			})
 			if err != nil {
 				ErrorLogger.Printf("Writer %d getPhase from replica %d failed: %v", *cid, rid, err)
+				temp := Timestamp{
+					Time: 0,
+					Cid:  getReply.GetCid(),
+				}
+				ch <- temp
 			} else {
 				temp := Timestamp{
 					Time: getReply.GetTime(),
@@ -66,7 +71,7 @@ func writerGetPhase(key string) Timestamp {
 	return getNewTimestamp(done)
 }
 
-func writerSetPhase(key, value string, ts Timestamp) {
+func (s *RegServer) writerSetPhase(key uint64, pair Pair) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -78,11 +83,11 @@ func writerSetPhase(key, value string, ts Timestamp) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			setReply, err := grpcClients[rid].SetPhase(ctx, &pb.SetRequest{
+			setReply, err := s.grpcClients[rid].SetPhase(ctx, &pb.SetRequest{
 				Key:   key,
-				Value: value,
-				Time:  ts.Time,
-				Cid:   ts.Cid,
+				Value: pair.Value,
+				Time:  pair.Ts.Time,
+				Cid:   pair.Ts.Cid,
 			})
 			if err != nil {
 				ErrorLogger.Printf("Writer %d setPhase from replica %d failed: %v", *cid, rid, err)
@@ -108,7 +113,10 @@ func writerSetPhase(key, value string, ts Timestamp) {
 	}
 }
 
-func write(key, value string) {
-	newTimestamp := writerGetPhase(key)
-	writerSetPhase(key, value, newTimestamp)
+func (s *RegServer) write(key uint64, value uint32) {
+	newTimestamp := s.writerGetPhase(key)
+	s.writerSetPhase(key, Pair{
+		Value: value,
+		Ts:    newTimestamp,
+	})
 }

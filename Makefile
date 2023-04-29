@@ -5,7 +5,7 @@ CLIENT_BINARY=$(OUTPUT_PATH)/client
 REPLICA_BINARY=$(OUTPUT_PATH)/replica
 
 CLIENT_DIR=./client
-REPLICA_DIR=./server
+REPLICA_DIR=./replica
 PROTO_FILE=mwmr/mwmr.proto
 
 build:

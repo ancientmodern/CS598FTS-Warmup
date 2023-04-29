@@ -18,23 +18,26 @@ func getReadPair(arr []Pair) Pair {
 	return res
 }
 
-func readerGetPhase(key string) Pair {
+func (s *RegServer) readerGetPhase(key uint64) (Pair, error) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
 	ch := make(chan Pair, n)
+	errCh := make(chan error, n)
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
-			// Contact the replica and print out its response.
+			defer wg.Done()
+
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			getReply, err := grpcClients[rid].GetPhase(ctx, &pb.GetRequest{
+			getReply, err := s.grpcClients[rid].GetPhase(ctx, &pb.GetRequest{
 				Key: key,
 			})
 			if err != nil {
 				ErrorLogger.Printf("Reader %d getPhase from replica %d failed: %v", *cid, rid, err)
+				errCh <- err
 			} else {
 				temp := Pair{
 					Value: getReply.GetValue(),
@@ -45,28 +48,39 @@ func readerGetPhase(key string) Pair {
 				}
 				ch <- temp
 			}
-			wg.Done()
 		}(i)
 	}
 
 	go func() {
 		wg.Wait()
 		close(ch)
+		close(errCh)
 	}()
 
 	done := make([]Pair, 0, f+1)
 
-	for pair := range ch {
-		done = append(done, pair)
-		if len(done) >= f+1 {
-			break
+	for {
+		select {
+		case pair, ok := <-ch:
+			if ok {
+				done = append(done, pair)
+				if len(done) >= f+1 {
+					return getReadPair(done), nil
+				}
+			}
+		case err, ok := <-errCh:
+			if ok && err == ErrKeyNotFound {
+				return Pair{}, ErrKeyNotFound
+			}
+		default:
+			if len(done) == 0 && len(ch) == 0 && len(errCh) == 0 {
+				return Pair{}, nil
+			}
 		}
 	}
-
-	return getReadPair(done)
 }
 
-func readerSetPhase(key string, pair Pair) {
+func (s *RegServer) readerSetPhase(key uint64, pair Pair) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -78,7 +92,7 @@ func readerSetPhase(key string, pair Pair) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			setReply, err := grpcClients[rid].SetPhase(ctx, &pb.SetRequest{
+			setReply, err := s.grpcClients[rid].SetPhase(ctx, &pb.SetRequest{
 				Key:   key,
 				Value: pair.Value,
 				Time:  pair.Ts.Time,
@@ -108,8 +122,11 @@ func readerSetPhase(key string, pair Pair) {
 	}
 }
 
-func read(key string) string {
-	readPair := readerGetPhase(key)
-	readerSetPhase(key, readPair)
+func (s *RegServer) read(key uint64) uint32 {
+	readPair, err := s.readerGetPhase(key)
+	if err != nil {
+		return 0xFF // 0xFF means key does not exist
+	}
+	s.readerSetPhase(key, readPair)
 	return readPair.Value
 }

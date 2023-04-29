@@ -10,11 +10,6 @@ import (
 	"sync"
 )
 
-type Server interface {
-	Run()
-	Stop()
-}
-
 type SimpleServer struct {
 	macToPort     map[string]byte
 	serverAddress string
@@ -28,6 +23,10 @@ func NewSimpleServer(serverAddr string) Server {
 		serverAddress: serverAddr,
 		running:       true,
 	}
+}
+
+func (s *SimpleServer) Init() {
+
 }
 
 func (s *SimpleServer) Stop() {

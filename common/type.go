@@ -1,8 +1,11 @@
 package common
 
 import (
+	"errors"
 	"sync"
 )
+
+var ErrKeyNotFound = errors.New("key not found")
 
 type Timestamp struct {
 	Time int64
@@ -10,12 +13,12 @@ type Timestamp struct {
 }
 
 type Pair struct {
-	Value string
+	Value uint32
 	Ts    Timestamp
 }
 
 type PairMutex struct {
-	Value string
+	Value uint32
 	Ts    Timestamp
 	Mtx   sync.RWMutex
 }

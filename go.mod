@@ -7,8 +7,6 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
-require github.com/montanaflynn/stats v0.7.0
-
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	golang.org/x/net v0.5.0 // indirect

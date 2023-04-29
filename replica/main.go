@@ -9,12 +9,13 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"sync"
 )
 
 var (
 	IP      = flag.String("ip", "0.0.0.0", "the replica ip address")
 	PORT    = flag.Int("port", 50051, "The replica port")
-	kvStore = make(map[string]*PairMutex)
+	kvStore = make(map[uint64]*PairMutex)
 	s       *grpc.Server
 )
 
@@ -27,11 +28,19 @@ type replica struct {
 func (s *replica) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply, error) {
 	key := in.GetKey()
 
-	kvStore[key].Mtx.RLock()
-	val := kvStore[key].Value
-	t := kvStore[key].Ts.Time
-	cid := kvStore[key].Ts.Cid
-	kvStore[key].Mtx.RUnlock()
+	pair, ok := kvStore[key]
+
+	if !ok {
+		return nil, fmt.Errorf("GetPhase: %w", ErrKeyNotFound)
+	}
+
+	pair.Mtx.RLock()
+
+	val := pair.Value
+	t := pair.Ts.Time
+	cid := pair.Ts.Cid
+
+	pair.Mtx.RUnlock()
 
 	return &pb.GetReply{
 		Value: val,
@@ -47,10 +56,29 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 	time := in.GetTime()
 	cid := in.GetCid()
 
-	kvStore[key].Mtx.RLock()
-	timeStore := kvStore[key].Ts.Time
-	cidStore := kvStore[key].Ts.Cid
-	kvStore[key].Mtx.RUnlock()
+	pair, ok := kvStore[key]
+
+	if !ok {
+		pair = &PairMutex{
+			Value: val,
+			Ts: Timestamp{
+				Time: time,
+				Cid:  cid,
+			},
+			Mtx: sync.RWMutex{},
+		}
+		kvStore[key] = pair
+		return &pb.SetACK{
+			Applied: true,
+		}, nil
+	}
+
+	pair.Mtx.RLock()
+
+	timeStore := pair.Ts.Time
+	cidStore := pair.Ts.Cid
+
+	pair.Mtx.RUnlock()
 
 	if time < timeStore || (time == timeStore && cid < cidStore) {
 		return &pb.SetACK{
@@ -59,9 +87,11 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 	}
 
 	kvStore[key].Mtx.Lock()
+
 	kvStore[key].Value = val
 	kvStore[key].Ts.Time = time
 	kvStore[key].Ts.Cid = cid
+
 	kvStore[key].Mtx.Unlock()
 
 	return &pb.SetACK{
