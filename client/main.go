@@ -3,14 +3,14 @@ package main
 import (
 	pb "CS598FTS-Warmup/mwmr"
 	"flag"
-	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 )
 
+// TODO: read from configuration file
 var (
-	replicas = []string{"128.110.217.160:50051", "128.110.217.137:50051", "128.110.217.131:50051"}
+	replicas = []string{"node-1:50051", "node-2:50051", "node-3:50051"}
 
 	socketPath  = "/tmp/sdn-uds.sock"
 	cid         = flag.Int64("cid", 0, "the id of this client")
@@ -23,12 +23,11 @@ var (
 func main() {
 	flag.Parse()
 
-	initGrpcConn()
+	// initGrpcConn()
 
-	if err := udsHandler(); err != nil {
-		fmt.Println("Error starting UDS server:", err)
-		return
-	}
+	server := NewSimpleServer(socketPath)
+
+	server.Run()
 }
 
 func initGrpcConn() {
