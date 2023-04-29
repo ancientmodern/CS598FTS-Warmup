@@ -18,12 +18,11 @@ func getReadPair(arr []Pair) Pair {
 	return res
 }
 
-func (s *RegProxy) readerGetPhase(key uint64) (Pair, error) {
+func (s *RegProxy) readerGetPhase(key uint64) Pair {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
 	ch := make(chan Pair, n)
-	errCh := make(chan error, n)
 
 	for i := 0; i < n; i++ {
 		go func(rid int) {
@@ -37,7 +36,6 @@ func (s *RegProxy) readerGetPhase(key uint64) (Pair, error) {
 			})
 			if err != nil {
 				// ErrorLogger.Printf("Reader %d getPhase from replica %d failed: %v", *cid, rid, err)
-				errCh <- err
 			} else {
 				temp := Pair{
 					Value: getReply.GetValue(),
@@ -54,30 +52,18 @@ func (s *RegProxy) readerGetPhase(key uint64) (Pair, error) {
 	go func() {
 		wg.Wait()
 		close(ch)
-		close(errCh)
 	}()
 
 	done := make([]Pair, 0, f+1)
 
-	for {
-		select {
-		case pair, ok := <-ch:
-			if ok {
-				done = append(done, pair)
-				if len(done) >= f+1 {
-					return getReadPair(done), nil
-				}
-			}
-		case err, ok := <-errCh:
-			if ok && err == ErrKeyNotFound {
-				return Pair{}, ErrKeyNotFound
-			}
-		default:
-			if len(done) == 0 && len(ch) == 0 && len(errCh) == 0 {
-				return Pair{}, nil
-			}
+	for pair := range ch {
+		done = append(done, pair)
+		if len(done) >= f+1 {
+			break
 		}
 	}
+
+	return getReadPair(done)
 }
 
 func (s *RegProxy) readerSetPhase(key uint64, pair Pair) {
@@ -123,10 +109,9 @@ func (s *RegProxy) readerSetPhase(key uint64, pair Pair) {
 }
 
 func (s *RegProxy) read(key uint64) uint32 {
-	readPair, err := s.readerGetPhase(key)
-	if err != nil {
-		return 0xFF // 0xFF means key does not exist
+	readPair := s.readerGetPhase(key)
+	if readPair.Value != 0xFF { // 0xFF means key does not exist
+		s.readerSetPhase(key, readPair)
 	}
-	s.readerSetPhase(key, readPair)
 	return readPair.Value
 }

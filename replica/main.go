@@ -31,7 +31,13 @@ func (s *replica) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply
 	pair, ok := kvStore[key]
 
 	if !ok {
-		return nil, fmt.Errorf("GetPhase: %w", ErrKeyNotFound)
+		fmt.Println("Key not found:", key)
+		// return nil, ErrKeyNotFound
+		return &pb.GetReply{
+			Value: 0xFF,
+			Time:  0,
+			Cid:   0,
+		}, nil
 	}
 
 	pair.Mtx.RLock()
@@ -41,6 +47,8 @@ func (s *replica) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply
 	cid := pair.Ts.Cid
 
 	pair.Mtx.RUnlock()
+
+	fmt.Println("Get the key:", key, "with value:", val)
 
 	return &pb.GetReply{
 		Value: val,
@@ -59,6 +67,7 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 	pair, ok := kvStore[key]
 
 	if !ok {
+		fmt.Println("Insert a new key:", key, "with value:", val)
 		pair = &PairMutex{
 			Value: val,
 			Ts: Timestamp{
@@ -68,6 +77,7 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 			Mtx: sync.RWMutex{},
 		}
 		kvStore[key] = pair
+
 		return &pb.SetACK{
 			Applied: true,
 		}, nil
@@ -93,6 +103,8 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 	kvStore[key].Ts.Cid = cid
 
 	kvStore[key].Mtx.Unlock()
+
+	fmt.Println("Update the key:", key, "with value:", val)
 
 	return &pb.SetACK{
 		Applied: true,

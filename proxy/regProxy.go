@@ -34,10 +34,12 @@ func (s *RegProxy) Stop() {
 func (s *RegProxy) Init() {
 	for rid := 0; rid < n; rid++ {
 		conn, err := grpc.Dial(s.replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
+
 		if err != nil {
 			log.Fatalf("did not connect: %v", err)
 		}
-		defer conn.Close()
+		// defer conn.Close()
+
 		s.grpcClients[rid] = pb.NewMWMRClient(conn)
 	}
 }
@@ -64,10 +66,8 @@ func (s *RegProxy) handleConnection(conn net.Conn) {
 		// Get request
 		getVal := s.read(keyUint64) // 0xFF means key does not exist
 		fmt.Printf("GET: dpid = %d, mac_address = %s, get_val: %d\n", dpid, macAddress, getVal)
-		msg := make([]byte, 4)
-		binary.BigEndian.PutUint32(msg, getVal)
-
-		conn.Write(msg)
+		msg := []byte{byte(getVal)}
+		conn.Write(msg) // only write 1 byte!!!
 	} else {
 		// Set request
 		fmt.Printf("SET: dpid = %d, mac_address = %s, set_val: %d\n", dpid, macAddress, val)

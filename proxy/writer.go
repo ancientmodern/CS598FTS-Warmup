@@ -38,11 +38,6 @@ func (s *RegProxy) writerGetPhase(key uint64) Timestamp {
 			})
 			if err != nil {
 				// ErrorLogger.Printf("Writer %d getPhase from replica %d failed: %v", *cid, rid, err)
-				temp := Timestamp{
-					Time: 0,
-					Cid:  getReply.GetCid(),
-				}
-				ch <- temp
 			} else {
 				temp := Timestamp{
 					Time: getReply.GetTime(),
