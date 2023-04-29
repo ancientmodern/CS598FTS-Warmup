@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 )
 
@@ -36,6 +37,8 @@ func main() {
 	proxy := factory(socketPath)
 
 	proxy.Init()
+
+	fmt.Printf("Run Proxy: cid = %d, type = %s", *cid, *proxyName)
 
 	proxy.Run()
 }

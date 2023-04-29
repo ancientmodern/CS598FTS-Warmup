@@ -58,7 +58,7 @@ func (s *RegProxy) handleConnection(conn net.Conn) {
 	key := response[1:9]
 
 	keyUint64 := binary.BigEndian.Uint64(key)
-	valUint32 := binary.BigEndian.Uint32([]byte{val})
+	valUint32 := uint32(val)
 
 	if setByte == 0x00 {
 		// Get request

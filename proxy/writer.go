@@ -37,7 +37,7 @@ func (s *RegProxy) writerGetPhase(key uint64) Timestamp {
 				Key: key,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Writer %d getPhase from replica %d failed: %v", *cid, rid, err)
+				// ErrorLogger.Printf("Writer %d getPhase from replica %d failed: %v", *cid, rid, err)
 				temp := Timestamp{
 					Time: 0,
 					Cid:  getReply.GetCid(),
@@ -90,7 +90,7 @@ func (s *RegProxy) writerSetPhase(key uint64, pair Pair) {
 				Cid:   pair.Ts.Cid,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Writer %d setPhase from replica %d failed: %v", *cid, rid, err)
+				// ErrorLogger.Printf("Writer %d setPhase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				ch <- setReply.GetApplied()
 			}

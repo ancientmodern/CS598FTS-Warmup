@@ -36,7 +36,7 @@ func (s *RegProxy) readerGetPhase(key uint64) (Pair, error) {
 				Key: key,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Reader %d getPhase from replica %d failed: %v", *cid, rid, err)
+				// ErrorLogger.Printf("Reader %d getPhase from replica %d failed: %v", *cid, rid, err)
 				errCh <- err
 			} else {
 				temp := Pair{
@@ -99,7 +99,7 @@ func (s *RegProxy) readerSetPhase(key uint64, pair Pair) {
 				Cid:   pair.Ts.Cid,
 			})
 			if err != nil {
-				ErrorLogger.Printf("Reader %d setPhase from replica %d failed: %v", *cid, rid, err)
+				// ErrorLogger.Printf("Reader %d setPhase from replica %d failed: %v", *cid, rid, err)
 			} else {
 				ch <- setReply.GetApplied()
 			}
