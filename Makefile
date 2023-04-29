@@ -1,15 +1,15 @@
 all: build
 
 OUTPUT_PATH=output
-CLIENT_BINARY=$(OUTPUT_PATH)/client
+PROXY_BINARY=$(OUTPUT_PATH)/proxy
 REPLICA_BINARY=$(OUTPUT_PATH)/replica
 
-CLIENT_DIR=./client
+PROXY_DIR=./proxy
 REPLICA_DIR=./replica
 PROTO_FILE=mwmr/mwmr.proto
 
 build:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(CLIENT_BINARY) $(CLIENT_DIR)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(PROXY_BINARY) $(PROXY_DIR)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(REPLICA_BINARY) $(REPLICA_DIR)
 
 clean:
@@ -17,7 +17,7 @@ clean:
 	rm -f $(OUTPUT_PATH)/*
 
 client:
-	go run -race $(CLIENT_DIR)
+	go run -race $(PROXY_DIR)
 
 replica:
 	go run -race $(REPLICA_DIR)

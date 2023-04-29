@@ -18,7 +18,7 @@ func getReadPair(arr []Pair) Pair {
 	return res
 }
 
-func (s *RegServer) readerGetPhase(key uint64) (Pair, error) {
+func (s *RegProxy) readerGetPhase(key uint64) (Pair, error) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -80,7 +80,7 @@ func (s *RegServer) readerGetPhase(key uint64) (Pair, error) {
 	}
 }
 
-func (s *RegServer) readerSetPhase(key uint64, pair Pair) {
+func (s *RegProxy) readerSetPhase(key uint64, pair Pair) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -122,7 +122,7 @@ func (s *RegServer) readerSetPhase(key uint64, pair Pair) {
 	}
 }
 
-func (s *RegServer) read(key uint64) uint32 {
+func (s *RegProxy) read(key uint64) uint32 {
 	readPair, err := s.readerGetPhase(key)
 	if err != nil {
 		return 0xFF // 0xFF means key does not exist

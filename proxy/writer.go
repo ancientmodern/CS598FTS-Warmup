@@ -21,7 +21,7 @@ func getNewTimestamp(arr []Timestamp) Timestamp {
 	}
 }
 
-func (s *RegServer) writerGetPhase(key uint64) Timestamp {
+func (s *RegProxy) writerGetPhase(key uint64) Timestamp {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -71,7 +71,7 @@ func (s *RegServer) writerGetPhase(key uint64) Timestamp {
 	return getNewTimestamp(done)
 }
 
-func (s *RegServer) writerSetPhase(key uint64, pair Pair) {
+func (s *RegProxy) writerSetPhase(key uint64, pair Pair) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
@@ -113,7 +113,7 @@ func (s *RegServer) writerSetPhase(key uint64, pair Pair) {
 	}
 }
 
-func (s *RegServer) write(key uint64, value uint32) {
+func (s *RegProxy) write(key uint64, value uint32) {
 	newTimestamp := s.writerGetPhase(key)
 	s.writerSetPhase(key, Pair{
 		Value: value,

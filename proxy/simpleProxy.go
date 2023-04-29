@@ -10,30 +10,30 @@ import (
 	"sync"
 )
 
-type SimpleServer struct {
+type SimpleProxy struct {
 	macToPort     map[string]byte
-	serverAddress string
+	socketAddress string
 	running       bool
 	mu            sync.Mutex
 }
 
-func NewSimpleServer(serverAddr string) Server {
-	return &SimpleServer{
+func NewSimpleProxy(socketAddr string) Proxy {
+	return &SimpleProxy{
 		macToPort:     make(map[string]byte),
-		serverAddress: serverAddr,
+		socketAddress: socketAddr,
 		running:       true,
 	}
 }
 
-func (s *SimpleServer) Init() {
+func (s *SimpleProxy) Init() {
 
 }
 
-func (s *SimpleServer) Stop() {
+func (s *SimpleProxy) Stop() {
 	s.running = false
 }
 
-func (s *SimpleServer) handleConnection(conn net.Conn) {
+func (s *SimpleProxy) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	response := make([]byte, 10)
@@ -69,19 +69,19 @@ func (s *SimpleServer) handleConnection(conn net.Conn) {
 	}
 }
 
-func (s *SimpleServer) Run() {
+func (s *SimpleProxy) Run() {
 	// Clean up the socket file if it exists
-	if _, err := os.Stat(s.serverAddress); !os.IsNotExist(err) {
-		os.Remove(s.serverAddress)
+	if _, err := os.Stat(s.socketAddress); !os.IsNotExist(err) {
+		os.Remove(s.socketAddress)
 	}
 
-	listener, err := net.Listen("unix", s.serverAddress)
+	listener, err := net.Listen("unix", s.socketAddress)
 	if err != nil {
 		panic(err)
 	}
 	defer listener.Close()
 
-	fmt.Printf("Listen on %s\n", s.serverAddress)
+	fmt.Printf("Listen on %s\n", s.socketAddress)
 
 	for s.running {
 		conn, err := listener.Accept()
@@ -96,4 +96,8 @@ func (s *SimpleServer) Run() {
 func decodeMacAddress(macBytes []byte) string {
 	hexMac := hex.EncodeToString(macBytes)
 	return strings.Join([]string{hexMac[:2], hexMac[2:4], hexMac[4:6], hexMac[6:8], hexMac[8:10], hexMac[10:12]}, ":")
+}
+
+func init() {
+	registerProxyFactory("simple", NewSimpleProxy)
 }

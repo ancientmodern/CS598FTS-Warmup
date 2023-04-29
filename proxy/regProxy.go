@@ -11,27 +11,27 @@ import (
 	"os"
 )
 
-type RegServer struct {
+type RegProxy struct {
 	replicas      []string
 	grpcClients   []pb.MWMRClient
-	serverAddress string
+	socketAddress string
 	running       bool
 }
 
-func NewRegServer(serverAddr string) Server {
-	return &RegServer{
+func NewRegProxy(socketAddr string) Proxy {
+	return &RegProxy{
 		replicas:      []string{"node-1:50051", "node-2:50051", "node-3:50051"},
 		grpcClients:   make([]pb.MWMRClient, n),
-		serverAddress: serverAddr,
+		socketAddress: socketAddr,
 		running:       true,
 	}
 }
 
-func (s *RegServer) Stop() {
+func (s *RegProxy) Stop() {
 	s.running = false
 }
 
-func (s *RegServer) Init() {
+func (s *RegProxy) Init() {
 	for rid := 0; rid < n; rid++ {
 		conn, err := grpc.Dial(s.replicas[rid], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
@@ -42,7 +42,7 @@ func (s *RegServer) Init() {
 	}
 }
 
-func (s *RegServer) handleConnection(conn net.Conn) {
+func (s *RegProxy) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	response := make([]byte, 10)
@@ -75,19 +75,19 @@ func (s *RegServer) handleConnection(conn net.Conn) {
 	}
 }
 
-func (s *RegServer) Run() {
+func (s *RegProxy) Run() {
 	// Clean up the socket file if it exists
-	if _, err := os.Stat(s.serverAddress); !os.IsNotExist(err) {
-		os.Remove(s.serverAddress)
+	if _, err := os.Stat(s.socketAddress); !os.IsNotExist(err) {
+		os.Remove(s.socketAddress)
 	}
 
-	listener, err := net.Listen("unix", s.serverAddress)
+	listener, err := net.Listen("unix", s.socketAddress)
 	if err != nil {
 		panic(err)
 	}
 	defer listener.Close()
 
-	fmt.Printf("Listen on %s\n", s.serverAddress)
+	fmt.Printf("Listen on %s\n", s.socketAddress)
 
 	for s.running {
 		conn, err := listener.Accept()
@@ -97,4 +97,9 @@ func (s *RegServer) Run() {
 
 		go s.handleConnection(conn)
 	}
+}
+
+func init() {
+	registerProxyFactory("reg", NewRegProxy)
+	registerProxyFactory("register", NewRegProxy)
 }
