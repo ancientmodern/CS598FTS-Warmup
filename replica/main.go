@@ -15,7 +15,7 @@ import (
 var (
 	IP      = flag.String("ip", "0.0.0.0", "the replica ip address")
 	PORT    = flag.Int("port", 50051, "The replica port")
-	kvStore = make(map[uint64]*PairMutex)
+	kvStore = sync.Map{}
 	s       *grpc.Server
 )
 
@@ -28,11 +28,10 @@ type replica struct {
 func (s *replica) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply, error) {
 	key := in.GetKey()
 
-	pair, ok := kvStore[key]
-
+	pair, ok := kvStore.Load(key)
 	if !ok {
 		fmt.Println("Key not found:", key)
-		// return nil, ErrKeyNotFound
+
 		return &pb.GetReply{
 			Value: 0xFF,
 			Time:  0,
@@ -40,13 +39,10 @@ func (s *replica) GetPhase(ctx context.Context, in *pb.GetRequest) (*pb.GetReply
 		}, nil
 	}
 
-	pair.Mtx.RLock()
-
-	val := pair.Value
-	t := pair.Ts.Time
-	cid := pair.Ts.Cid
-
-	pair.Mtx.RUnlock()
+	res := pair.(*Pair)
+	val := res.Value
+	t := res.Ts.Time
+	cid := res.Ts.Cid
 
 	fmt.Println("Get the key:", key, "with value:", val)
 
@@ -64,31 +60,26 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 	time := in.GetTime()
 	cid := in.GetCid()
 
-	pair, ok := kvStore[key]
-
+	pair, ok := kvStore.Load(key)
 	if !ok {
 		fmt.Println("Insert a new key:", key, "with value:", val)
-		pair = &PairMutex{
+		pair = &Pair{
 			Value: val,
 			Ts: Timestamp{
 				Time: time,
 				Cid:  cid,
 			},
-			Mtx: sync.RWMutex{},
 		}
-		kvStore[key] = pair
+		kvStore.Store(key, pair)
 
 		return &pb.SetACK{
 			Applied: true,
 		}, nil
 	}
 
-	pair.Mtx.RLock()
-
-	timeStore := pair.Ts.Time
-	cidStore := pair.Ts.Cid
-
-	pair.Mtx.RUnlock()
+	res := pair.(*Pair)
+	timeStore := res.Ts.Time
+	cidStore := res.Ts.Cid
 
 	if time < timeStore || (time == timeStore && cid < cidStore) {
 		return &pb.SetACK{
@@ -96,13 +87,14 @@ func (s *replica) SetPhase(ctx context.Context, in *pb.SetRequest) (*pb.SetACK, 
 		}, nil
 	}
 
-	kvStore[key].Mtx.Lock()
-
-	kvStore[key].Value = val
-	kvStore[key].Ts.Time = time
-	kvStore[key].Ts.Cid = cid
-
-	kvStore[key].Mtx.Unlock()
+	insert := &Pair{
+		Value: val,
+		Ts: Timestamp{
+			Time: time,
+			Cid:  cid,
+		},
+	}
+	kvStore.Store(key, insert)
 
 	fmt.Println("Update the key:", key, "with value:", val)
 

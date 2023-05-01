@@ -2,7 +2,6 @@ package common
 
 import (
 	"errors"
-	"sync"
 )
 
 var ErrKeyNotFound = errors.New("key not found")
@@ -15,12 +14,6 @@ type Timestamp struct {
 type Pair struct {
 	Value uint32
 	Ts    Timestamp
-}
-
-type PairMutex struct {
-	Value uint32
-	Ts    Timestamp
-	Mtx   sync.RWMutex
 }
 
 func LessTimestamp(lhs, rhs Timestamp) bool {
